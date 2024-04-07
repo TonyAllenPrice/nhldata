@@ -8,6 +8,7 @@ import requests
 import pandas as pd
 import itertools
 from sqlalchemy import create_engine
+from tqdm import tqdm
 
 def getSeasons():
     '''
@@ -220,22 +221,37 @@ if __name__ == '__main__':
 
     rosters = []
 
+    print('Getting rosters for last 15 NHL Seasons for currently active teams.')
+
     for team in activeTeams:
         seasons = getTeamSeasons(team)
-        seasons = seasons if len(seasons) < 5 else seasons[-25:]
-        for season in seasons:
+        seasons = seasons if len(seasons) < 5 else seasons[-15:]
+        for season in tqdm(seasons,desc=f'{team}',ascii=True):
             team_name = getTeamName(team)
             roster_df = getRoster(team,season)
             roster_df['Team'] = team_name
+            roster_df['teamAbbr'] = team
             roster_df['seasonId'] = season
             rosters.append(roster_df)
 
     rosters_df = pd.concat(rosters)
     rosters_df = rosters_df.reset_index(drop=True)
 
-    engine = create_engine(r"sqlite:///nhldata.db")
-    conn = engine.raw_connection()
+    players_df = rosters_df[['id','firstName','lastName','heightInInches','weightInPounds',
+                                'heightInCentimeters','weightInKilograms', 'birthDate','birthCity',
+                                'birthCountry','birthStateProvince']]
+    players_df = players_df.drop_duplicates(subset=['id'],keep='last')
 
-    rosters_df.to_sql(name='dim_Rosters',con=conn,if_exists='replace')
+    rosters_df = rosters_df[['teamAbbr','seasonId','id','sweaterNumber','positionCode']]
+    rosters_df = rosters_df.rename(columns={'id':'playerId'})
+
+    engine = create_engine("mysql+pymysql://tony:pass@localhost:3306/nhl")
+    conn = engine.connect()
+
+    print('Writing teams, rosters, and players tables to local database.')
+
+    teams_df.to_sql(name='dim_Teams',con=conn,if_exists='replace',index=False)
+    rosters_df.to_sql(name='dim_Rosters',con=conn,if_exists='replace',index=False)
+    players_df.to_sql(name='dim_Players',con=conn,if_exists='replace',index=False)
     conn.commit()
     conn.close()
