@@ -2,13 +2,14 @@
 Script requests and dowloads the data files that are published by MoneyPuck here:
 https://moneypuck.com/data.htm
 
-It then builds tables that are loaded into a SQLite database called nhldata.db
+It then builds tables that are loaded into a local database.
 '''
 
 import pandas as pd
 import requests
 import io
 from sqlalchemy import create_engine
+from tqdm import tqdm
 
 def getData(gametype,file,seasons):
     '''
@@ -33,7 +34,7 @@ def getData(gametype,file,seasons):
     '''
     res = []
     
-    for season in seasons:
+    for season in tqdm(seasons,desc=f'{gametype} | {file}',ascii=True):
         url = f'{base_url}{season}/{gametype}/{file}.csv'
         r = requests.get(url)
         data = r.content.decode('utf8')
@@ -48,18 +49,32 @@ if __name__ == '__main__':
     base_url = 'https://moneypuck.com/moneypuck/playerData/seasonSummary/'
 
     reg_season = {}
+    playoff = {}
+
+    print('Getting regular season data from MoneyPuck.')
 
     for file in filenames:
         frame = getData('regular',file,seasons)
         reg_season[f'fact_{file}Season'] = frame
+    
+    print('Getting playoff data from MoneyPuck.')
 
-    engine = create_engine(r"sqlite:///nhldata.db")
-    conn = engine.raw_connection()
+    for file in filenames:
+        frame = getData('playoff',file,seasons)
+        playoff[f'fact_{file}Playoffs'] = frame
+
+    engine = create_engine("mysql+pymysql://tony:pass@localhost:3306/nhl")
+    conn = engine.connect()
 
     for var in reg_season:
         frame = reg_season[var]
-        print(f'Writing {var}')
-        frame.to_sql(name=var,con=conn,if_exists='replace')
-        conn.commit()
+        print(f'Writing {var} to database.')
+        frame.to_sql(name=var,con=conn,if_exists='replace',index=False)
+    
+    for var in playoff:
+        frame = playoff[var]
+        print(f'Writing {var} to database.')
+        frame.to_sql(name=var,con=conn,if_exists='replace',index=False)
 
+    conn.commit()
     conn.close()
