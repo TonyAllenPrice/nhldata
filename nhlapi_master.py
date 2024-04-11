@@ -66,8 +66,7 @@ def team_seasons(team):
 
     base = f'{WEB_URL}/v1/roster-season/{team}'
     response = requests.get(base)
-    data = response.json()
-    return data
+    return response.json()
 
 def teams():
     '''
@@ -210,12 +209,62 @@ def player_game_log(player_id,season,game_type):
 
 def player_info(player_id):
     '''
-    NEEDS CLEANED
+    Retrieve player information from the API.
+
+    Args:
+        player_id (int): The ID of the player to retrieve information for.
+
+    Returns:
+        dict: A dictionary containing the player information.
+
+    Raises:
+        requests.exceptions.RequestException: If there is an error making the API request.
+
+    Examples:
+        >>> player_info(8478402)
+        {
+            'id': 8478402,
+            'fullName': 'John Doe',
+            'position': 'Forward',
+            'team': 'NYR',
+            ...
+        }
     '''
     base = f'{WEB_URL}/v1/player/{player_id}/landing'
     response = requests.get(base)
     data = response.json()
+    unwanted_keys =  ['draftDetails','inTop100AllTime', 'inHHOF', 'featuredStats', 'shopLink', 'twitterLink', 'watchLink', 'last5Games', 'seasonTotals', 'awards', 'currentTeamRoster']
+    for key in unwanted_keys:
+        data.pop(key,None)
+    for element in data:
+        if isinstance(data[element],dict) and 'default' in data[element]:
+            data[element] = data[element]['default']
     return data
+
+def player_draft_details(player_id):
+    '''
+    Retrieve player draft details from the API.
+
+    Args:
+        player_id (int): The ID of the player to retrieve draft details for.
+
+    Returns:
+        dict: A dictionary containing the player's draft details.
+
+    Examples:
+        >>> player_draft_details(8478402)
+        {
+            'draftYear': 2010,
+            'draftRound': 1,
+            'draftOverallPick': 1,
+            'draftTeam': 'EDM',
+            ...
+        }
+    '''
+    base = f'{WEB_URL}/v1/player/{player_id}/landing'
+    response = requests.get(base)
+    data = response.json()
+    return data['draftDetails']
 
 def player_game_log_now(player_id):
     '''
@@ -242,4 +291,5 @@ def player_game_log_now(player_id):
 
 if __name__ == '__main__':
 
-    print(player_game_log_now(8478402))
+    print(player_info(8478402))
+    print(player_draft_details(8478402))
