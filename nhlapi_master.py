@@ -36,11 +36,16 @@ def active_teams(season):
 
     Examples:
         >>> getActiveTeams('20202021')
-        ['NYR', 'BOS', 'TOR', 'MTL', 'VAN', 'EDM', 'CHI', 'MIN', '...', 'LAK']
+        ['NYR', 'BOS', 'TOR', 'MTL', 'VAN', 'EDM', 'CHI', 'MIN', ... 'LAK']
     '''
 
-    base = f"{STATS_URL}/en/goalie/summary?limit=-1&sort=wins&cayenneExp=seasonId={season}"
-    response = requests.get(base)
+    base = f"{STATS_URL}/en/goalie/summary"
+    payload = {
+                'limit':'-1',
+                'cayenneExp':'',
+                'seasonId':season
+            }
+    response = requests.get(base,params=payload)
     data = response.json()
     goalies = data['data']
     teams = [g['teamAbbrevs'] for g in goalies]
@@ -142,8 +147,14 @@ def skater_stats(total_players,season):
     start = 0
     results = []
     while start < total_players:
-        base = f'{STATS_URL}/en/skater/summary?limit=100&start={start}&cayenneExp=seasonId={season}'
-        response = requests.get(base)
+        base = f'{STATS_URL}/en/skater/summary'
+        payload = {
+                'limit':'100',
+                'start':start,
+                'cayenneExp':'',
+                'seasonId':season
+            }
+        response = requests.get(base,params=payload)
         data = response.json()
         results.append(data['data'])
         start += 100
@@ -173,8 +184,14 @@ def goalies_stats(total_players,season):
     start = 0
     results = []
     while start < total_players:
-        base = f'{STATS_URL}/en/goalie/summary?limit=100&start={start}&cayenneExp=seasonId={season}'
-        response = requests.get(base)
+        base = f'{STATS_URL}/en/goalie/summary'
+        payload = {
+                'limit':'100',
+                'start':start,
+                'cayenneExp':'',
+                'seasonId':season
+            }
+        response = requests.get(base,params=payload)
         data = response.json()
         results.append(data['data'])
         start += 100
@@ -266,6 +283,33 @@ def player_draft_details(player_id):
     data = response.json()
     return data['draftDetails']
 
+def player_last_five(player_id):
+    """
+    Retrieves the last five games played by a player.
+
+    Args:
+        player_id (int): The ID of the player.
+
+    Returns:
+        list[doct]: List of dictionaries containing data about the last 5 games a player played.
+
+    Raises:
+        None.
+
+    Examples:
+    >>> player_last_five(12345)
+    [
+        {'assists': 2, 'gameDate': '2024-04-06', 'gameId': 2023021226, 'gameTypeId': 2, 'goals': 0, 'homeRoadFlag': 'R', 'opponentAbbrev': 'CGY', 'pim': 0, 'plusMinus': 0, 'points': 2, 'powerPlayGoals': 0, 'shifts': 22, 'shorthandedGoals': 0, 'shots': 3, 'teamAbbrev': 'EDM', 'toi': '20:39'},
+        {'assists': 0, 'gameDate': '2024-04-05', 'gameId': 2023021214, 'gameTypeId': 2, 'goals': 2, 'homeRoadFlag': 'H', 'opponentAbbrev': 'COL', 'pim': 0, 'plusMinus': 2, 'points': 2, 'powerPlayGoals': 0, 'shifts': 18, 'shorthandedGoals': 0, 'shots': 9, 'teamAbbrev': 'EDM', 'toi': '20:11'}
+        ...
+    ]
+    """
+    base = f'{WEB_URL}/v1/player/{player_id}/landing'
+    response = requests.get(base)
+    data = response.json()
+    return data['last5Games']
+
+
 def player_game_log_now(player_id):
     '''
     Access the gamelog endpoint of the NHL API. Contains currently active games and completed games for current season.
@@ -291,5 +335,4 @@ def player_game_log_now(player_id):
 
 if __name__ == '__main__':
 
-    print(player_info(8478402))
-    print(player_draft_details(8478402))
+    print(skater_stats(200,20232024))
