@@ -1,11 +1,7 @@
 # NHL Stats Gathering and Cleaning
 
-The aim of this project is to gather varying NHL stats sources (MoneyPuck, NHL API, etc) and build a player/game stats workbook in Tableau Public.
+The aim of this project is to build a Python wrapper module for the public NHL APIs. 
 
-4/4/23: Currently a WIP.
+Based on [NHL-API-Reference](https://github.com/Zmalski/NHL-API-Reference) by Zmalski
 
-## Build List - Updated 4/6/24:
-
-1. Refactor moneypuck.py to include data cleaning steps
-2. New build: SQL queries to pull data from MySQL then into .csv for visualization
-3. New build: Tableau Public dashboard
+4/13/24: WIP.
