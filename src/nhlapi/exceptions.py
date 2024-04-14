@@ -1,0 +1,2 @@
+class NHLApiException(Exception):
+    pass

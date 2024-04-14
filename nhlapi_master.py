@@ -335,4 +335,4 @@ def player_game_log_now(player_id):
 
 if __name__ == '__main__':
 
-    print(skater_stats(200,20232024))
+    print(seasons()[-1])
