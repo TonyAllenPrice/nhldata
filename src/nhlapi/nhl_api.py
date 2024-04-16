@@ -360,7 +360,7 @@ class NHLApi:
 
         Returns:
             List[Dict]: A dictionary containing the draft rankings.
-"""
+        """
         year = 'now' if year == 'now' else f'{year}/{category}'
         return self._get_wrapper_data('web',f'draft/rankings/{year}')
     
