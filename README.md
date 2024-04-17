@@ -1,4 +1,4 @@
-# NHL Stats API Wrapper
+# NHL Stats Sources
 
 The aim of this project is to build a Python wrapper module for the various public NHL APIs and data sources. 
 
