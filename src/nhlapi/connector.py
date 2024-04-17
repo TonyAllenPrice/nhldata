@@ -22,7 +22,6 @@ class Wrapper:
     def get(self, type:str, endpoint:str, ep_params:dict = None) -> List[Dict]:
         base_url = self._url_check(type)
         full_url = f'{base_url}/{endpoint}'
-        print(full_url)
         try:
             response = requests.get(url=full_url, params=ep_params)
         except requests.exceptions.RequestException as e:

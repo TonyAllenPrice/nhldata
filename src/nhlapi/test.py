@@ -1,4 +1,4 @@
-from nhl_api import NHLApi
+from nhl_api import Web,Stats
 
-api = NHLApi()
-print(api.where_to_watch())
+stats = Stats()
+print(stats.stats_team(20232024))
