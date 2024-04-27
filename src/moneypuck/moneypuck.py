@@ -2,60 +2,52 @@
 Script requests and dowloads the data files that are published by MoneyPuck here:
 https://moneypuck.com/data.htm
 
+Data Dictionary available here: 
+https://peter-tanner.com/moneypuck/downloads/MoneyPuckDataDictionaryForPlayers.csv
+
 TODO:
 Review PageSource and extract URLs
 Build functions for each Request type with List[Dict] returns
-Helper function for returning file?
 '''
 
-import urllib
 import csv
 import requests
 import io
+import zipfile
 
-def _url(filetype:str):
-    urls = {
-        'shots':'https://peter-tanner.com/moneypuck/downloads/',
-        'stats':'https://moneypuck.com/moneypuck/playerData/'
-    }
-    return urls[filetype]
+BASE_URL = 'https://moneypuck.com/moneypuck/playerData/'
 
-def get_stats(base_url:str,gametype:str,file:str,seasons:list):
-    '''
-    Requests and dowloads a specific file from MoneyPuck
-    Data Dictionary available here: https://peter-tanner.com/moneypuck/downloads/MoneyPuckDataDictionaryForPlayers.csv
+def _fetch_file(base:str,endpoint:str,file_name:str):
+    url = f'{base}{endpoint}{file_name}.csv'
+    r = requests.get(url)
+    return io.StringIO(r.text)
 
-    Args:
-        gametype (str): The type of game data to retrieve ('regular' or 'playoff').
-        file ['skaters','goalies','lines','teams']:The name of the data file to retrieve.
-        seasons (list): List of seasons to pull (ex [2008,2009,2010])
+def _process_file(base:str,endpoint:str,file_name:str):
+    data_stream = _fetch_file(base, endpoint, file_name)
+    return [dict(row.items()) for row in csv.DictReader(data_stream, skipinitialspace=True)]
 
-    Returns:
-        List[Dict]: The concatenated data frames from the retrieved files.
-    '''
-
-    res = []
-
+def season_stats(gametype:str,file_type:str,seasons:list):
+    res = []  
     for season in seasons:
-        url = f'{base_url}{season}/{gametype}/{file}.csv'
-        r = requests.get(url)
-        buff = io.StringIO(r.text)
-        a = [dict(row.items()) for row in csv.DictReader(buff, skipinitialspace=True)]
-        res.append(a)
-
+        endpoint = f'seasonSummary/{season}/{gametype}/'
+        res.extend(_process_file(BASE_URL,endpoint,file_type))
     return res
 
+def player_by_game(player_id:int,position:str,gametype:str):
+    endpoint = f'careers/gameByGame/{gametype}/{position}/'
+    return _process_file(BASE_URL,endpoint,player_id)
+
+def team_stats(gametype:str,team:str):
+    endpoint = f'careers/gameByGame/{gametype}/teams/'
+    return _process_file(BASE_URL,endpoint,team)
+
+def get_shots(season:int):
+    r = requests.get(f'https://peter-tanner.com/moneypuck/downloads/shots_{season}.zip')
+    with zipfile.ZipFile(io.BytesIO(r.content)) as z:
+        for zipfile in z.infolist():
+            with z.open(zipfile) as thefile:
+                yield zipfile.filename, thefile
+
 if __name__ == '__main__':
-    filenames = ['skaters']
-    seasons = [2023]
-    base_url = 'https://moneypuck.com/moneypuck/playerData/seasonSummary/'
-    'https://moneypuck.com/moneypuck/playerData/careers/gameByGame/regular/teams/COL.csv'
-
-    reg_season = {}
-    playoff = {}
-
-    print('Getting regular season data from MoneyPuck.')
-
-    for file in filenames:
-        frame = get_stats(base_url,'regular',file,seasons)
-        reg_season[f'fact_{file}Season'] = frame
+    shots_2023 = get_shots(2023)
+    print(iter(shots_2023))
