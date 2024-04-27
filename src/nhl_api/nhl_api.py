@@ -14,9 +14,39 @@ class Web:
         self._wrapper = Wrapper(ver, lang, ssl_verify)
 
     def _get_wrapper_data(self, endpoint: str, type_: str = 'web', ep_params: Dict = None):
+        """
+        Get wrapper data from the NHL API.
+
+        Args:
+            endpoint (str): The endpoint to retrieve data from.
+            type_ (str, optional): The type of data to retrieve. Defaults to 'web'.
+            ep_params (Dict, optional): Additional parameters for the endpoint. Defaults to None.
+
+        Returns:
+            The data retrieved from the NHL API.
+
+        Raises:
+            None.
+
+        Examples:
+            >>> _get_wrapper_data('players')
+            {'data': [{'id': 1, 'name': 'John Doe'}, {'id': 2, 'name': 'Jane Smith'}]}
+        """
         return self._wrapper.get(type=type_, endpoint=endpoint, ep_params=ep_params or {})
 
     def _extract_default(self, data):
+        """
+        Extract default values from a dictionary.
+
+        Args:
+            data (dict): The dictionary to extract default values from.
+
+        Returns:
+            dict: A new dictionary with the default values extracted.
+
+        Raises:
+            None.
+        """
         return {k: v['default'] if isinstance(v, dict) and 'default' in v else v for k, v in data.items()}
 
     def seasons(self) -> List:
