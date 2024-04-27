@@ -133,6 +133,3 @@ def shots_season(season:int):
     with zipfile.ZipFile(io.BytesIO(r.content)) as zipped, zipped.open(f'shots_{season}.csv') as infile:
         data_stream = io.TextIOWrapper(infile, 'utf-8')
         return [dict(row.items()) for row in csv.DictReader(data_stream, skipinitialspace=True)]
-
-if __name__ == '__main__':
-    print(season_stats('skaters',[2023],'regular'))
