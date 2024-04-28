@@ -15,3 +15,4 @@ nhlstats/nhl/__pycache__/
 nhlstats/moneypuck/__pycache__/
 nhlstats/tools/__pycache__/
 nhlstats/__pycache__/
+project.toml
