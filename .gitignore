@@ -3,3 +3,4 @@ src/nhl_api/__pycache__/exceptions.cpython-312.pyc
 src/nhl_api/__pycache__/nhl_api.cpython-312.pyc
 src/nhl_api/__pycache__
 src/nhl_api/test.py
+src/__init__.py

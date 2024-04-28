@@ -1,8 +1,9 @@
-from connector import Wrapper
+from wrapper import Wrapper
+from exceptions import NHLApiException
 from typing import List, Dict
 
-class Web:
-    def __init__(self, ver: str = 'v1', lang: str = 'en', ssl_verify: bool = True):
+class Connector(object):
+    def __init__(self, type_: str, ver: str = 'v1', lang: str = 'en', ssl_verify: bool = True):
         """
         Initializes the NHLApi object.
 
@@ -11,16 +12,17 @@ class Web:
             lang (str): The language to use for API responses. Delfaults to 'en'.
             ssl_verify (bool): Whether to verify SSL certificates.
         """
+        self._type = type_
         self._wrapper = Wrapper(ver, lang, ssl_verify)
 
-    def _get_wrapper_data(self, endpoint: str, type_: str = 'web', ep_params: Dict = None):
+    def _get_wrapper_data(self, endpoint: str, ep_params: Dict = None):
         """
         Get wrapper data from the NHL API.
 
         Args:
             endpoint (str): The endpoint to retrieve data from.
-            type_ (str, optional): The type of data to retrieve. Defaults to 'web'.
-            ep_params (Dict, optional): Additional parameters for the endpoint. Defaults to None.
+            type_ (str, optional): The type of data to retrieve.
+            ep_params (Dict, optional): Additional parameters for the endpoint.
 
         Returns:
             The data retrieved from the NHL API.
@@ -32,7 +34,17 @@ class Web:
             >>> _get_wrapper_data('players')
             {'data': [{'id': 1, 'name': 'John Doe'}, {'id': 2, 'name': 'Jane Smith'}]}
         """
-        return self._wrapper.get(type=type_, endpoint=endpoint, ep_params=ep_params or {})
+        return self._wrapper.get(type=self._type, endpoint=endpoint, ep_params=ep_params or {})
+
+    def _check_gametype(self,gametype:str):
+        gametypes = {'regular': 2, 'playoffs': 3}
+        return gametypes.get(gametype, NHLApiException)
+        
+
+class WebConnector(Connector):
+
+    def __init__(self, ver: str = 'v1', lang: str = 'en', ssl_verify: bool = True)
+        super().__init__('web', ver, lang, ssl_verify)
 
     def _extract_default(self, data):
         """
@@ -70,19 +82,21 @@ class Web:
         """
         return self._get_wrapper_data(f'roster-season/{team}')
 
-    def roster(self, team: str, season: int = 'current') -> List[Dict]:
+    def roster(self, team: str, season: int = None) -> List[Dict]:
         """
         Returns the roster for a given team and season.
 
         Args:
             team (str): Shortcode for the team.
-            season (int): The season for which to retrieve the roster. Defaults to 'current'.
+            season (int): The season for which to retrieve the roster.
 
         Returns:
             List[Dict]: A list of player information in the roster.
         """
-        data = self._get_wrapper_data(f'roster/{team}/{season}')
+        season_str = 'current' if season is None else season
+        data = self._get_wrapper_data(f'roster/{team}/{season_str}')
         return [self._extract_default(player) for pos in data for player in data[pos]]
+
 
     def player_info(self, player_id: int) -> List[Dict]:
         """
@@ -121,37 +135,37 @@ class Web:
         """
         return self._get_wrapper_data(f'player/{player_id}/landing')['last5Games']
 
-    def game_log_player(self, player_id: int, season: int = None, game_type: int = None) -> List[Dict]:
+    def game_log_player(self, player_id: int, season: int = None, game_type: str = None) -> List[Dict]:
         """
         Returns the game log for a player in a given season and game type.
 
         Args:
             player_id (int): The ID of the player.
-            season (int): The season for which to retrieve the game log. Defaults to current.
-            game_type (int): The type of the game. (2 - Regular Season, 3 - Playoffs)
+            season (int): The season for which to retrieve the game log.
+            game_type (int): The type of the game - Regular or PLayoffs
 
         Returns:
             List[Dict]: A dictionary containing the game log.
         """
         season_str = 'now' if season is None else str(season)
-        game_type_str = '' if game_type is None else f'/{game_type}'
+        game_type_str = '' if game_type is None else f'/{self._check_gametype(game_type)}'
         return self._get_wrapper_data(f'player/{player_id}/game-log/{season_str}{game_type_str}')['gameLog']
 
-    def stat_leaders(self, player_type: str, season: int = None, game_type: int = 2, category: str = None, limit: int = -1) -> List[Dict]:
+    def stat_leaders(self, player_type: str, season: int = None, game_type: str = 'regular', category: str = None, limit: int = -1) -> List[Dict]:
         """
         Returns the statistical leaders for a player type in a given season and game type.
 
         Args:
             player_type (str): The type of player.
-            season (int): The season for which to retrieve the statistical leaders. Defaults to 'current'.
-            game_type (int): The type of the game. Defaults to 2 (Regular Season).
-            category (str): The category of the statistics. Defaults to None.
-            limit (int): The maximum number of leaders to retrieve. Defaults to All.
+            season (int): The season for which to retrieve the statistical leaders.
+            game_type (int): The type of the game. 
+            category (str): The category of the statistics. 
+            limit (int): The maximum number of leaders to retrieve.
 
         Returns:
             List[Dict]: A dictionary containing the statistical leaders.
         """
-        season_path = 'current' if season is None else f'{season}/{game_type}'
+        season_path = 'current' if season is None else f'{season}/{self._check_gametype(game_type)}'
         return self._get_wrapper_data(f'{player_type}-stats-leaders/{season_path}', {'categories': category, 'limit': limit})
 
     def player_spotlight(self) -> List[Dict]:
@@ -165,10 +179,10 @@ class Web:
     
     def standings(self,date: str = 'now') -> List[Dict]:
         """
-        Returns the standings for a specific date. Default is today.
+        Returns the standings for a specific date.
 
         Args:
-            date (str): Date of the standings in YYYY-MM-DD format. Default is today.
+            date (str): Date of the standings in YYYY-MM-DD format.
 
         Returns:
             List[Dict]: A dictionary containing the standings.
@@ -184,19 +198,19 @@ class Web:
         """
         return self._get_wrapper_data('standings-season')
     
-    def stats_club(self,team:str, game_type:int = None) -> List[Dict]:
+    def stats_club(self,team:str, game_type:str = None) -> List[Dict]:
         """
         Returns the statistics for a club/team.
 
         Args:
             team (str): The name of the team.
-            season (int): The season for which to retrieve the statistics. Defaults to 'now'.
-            game_type (int): The type of the game. Defaults to None for current standings.
+            season (int): The season for which to retrieve the statistics.
+            game_type (str): The type of the game.
 
         Returns:
             List[Dict]: A dictionary containing the statistics.
         """
-        endpoint = f'club-stats/{team}/now' if game_type is None else f'club-stats/{team}/{game_type}'
+        endpoint = f'club-stats/{team}/now' if game_type is None else f'club-stats/{team}/{self._check_gametype(game_type)}'
         return self._get_wrapper_data(endpoint)
     
     def club_gametypes(self, team:str) -> List[Dict]:
@@ -236,28 +250,30 @@ class Web:
         data = self._get_wrapper_data(f'prospects/{team}')
         return [self._extract_default(player) for pos in data for player in data[pos]]
 
-    def club_schedule(self, team:str, length:str = 'season', window:str = 'now') -> List[Dict]:
+    def club_schedule(self, team:str, length:str = None, window:str = None) -> List[Dict]:
         """
         Returns the schedule for a club/team.
 
         Args:
             team (str): The name of the team.
-            length (str): The length of the schedule. Defaults to 'season'. Also accepts Month or Week.
-            window (str): The window of the schedule. Defaults to 'now'. Also accepts YYYY-MM or YYYY-MM-DD.
+            length (str): The length of the schedule. Also accepts Month or Week.
+            window (str): The window of the schedule. Also accepts YYYY-MM or YYYY-MM-DD.
 
         Returns:
             List[Dict]: A dictionary containing the schedule.
         """
-        ep = f'club-schedule-season/{team}/{window}' if length == 'season' else f'club-schedule/{team}/{length}/{window}'
-        return self._get_wrapper_data(ep)        
+        window_str = 'now' if window is None else window
+        length = 'season' if length = None else length
+        ep = f'club-schedule-season/{team}/{window_str}' if length == 'season' else f'club-schedule/{team}/{length}/{window_str}'
+        return self._get_wrapper_data(ep)
 
     def league_schedule(self, sched_type:str = 'schedule', date:str = 'now') -> List[Dict]:
         """
         Returns the schedule for the league.
 
         Args:
-            sched_type (str): The type of the schedule (schedule or calendar). Defaults to 'schedule'.
-            date (str): The date for which to retrieve the schedule. Defaults to 'now'. Format: YYYY-MM-DD
+            sched_type (str): The type of the schedule (schedule or calendar).
+            date (str): The date for which to retrieve the schedule. Format: YYYY-MM-DD
 
         Returns:
             List[Dict]: A dictionary containing the schedule.
@@ -270,7 +286,7 @@ class Web:
         Returns the scores information for a given date.
 
         Args:
-            date (str): The date for which to retrieve the scores. Defaults to 'now'. Format: YYYY-MM-DD
+            date (str): The date for which to retrieve the scores. Format: YYYY-MM-DD
 
         Returns:
             List[Dict]: A dictionary containing the scores information.
@@ -291,7 +307,7 @@ class Web:
         Returns the TV schedule information.
 
         Args:
-            date (str): The date for which to retrieve the TV schedule. Defaults to 'now'. Format: YYYY-MM-DD
+            date (str): The date for which to retrieve the TV schedule. Format: YYYY-MM-DD
 
         Returns:
             List[Dict]: A dictionary containing the TV schedule information.
@@ -313,7 +329,7 @@ class Web:
 
         Args:
             game_id (int): The ID of the game.
-            section (str): The section of the gamecenter. Defaults to 'play-by-play'.
+            section (str): The section of the gamecenter.
                 Options: 'play-by-play','boxscore','landing'
 
         Returns:
@@ -326,7 +342,7 @@ class Web:
         Returns the odds information for a given country.
 
         Args:
-            country (str): The country for which to retrieve the odds. Defaults to 'US'.
+            country (str): The country for which to retrieve the odds.
 
         Returns:
             List[Dict]: A dictionary containing the odds information.
@@ -338,8 +354,8 @@ class Web:
         Returns the draft rankings for a given year and category.
 
         Args:
-            year (str): The year for which to retrieve the draft rankings. Defaults to 'now'. Format: YYYY
-            category (str): The category of the draft rankings. Defaults to None.
+            year (str): The year for which to retrieve the draft rankings. Format: YYYY
+            category (str): The category of the draft rankings.
                 Options: 1 - NA Skater, 2 - Intl Skater, 3 - NA Goalie, 4 - Intl Goalie
 
         Returns:
@@ -353,9 +369,9 @@ class Web:
         Returns the metadata for players, teams, or a specific game.
 
         Args:
-            players (str): The players for which to retrieve the metadata. Defaults to None.
-            teams (str): The teams for which to retrieve the metadata. Defaults to None.
-            game_id (int): The ID of the game for which to retrieve the metadata. Defaults to None.
+            players (str): The players for which to retrieve the metadata.
+            teams (str): The teams for which to retrieve the metadata.
+            game_id (int): The ID of the game for which to retrieve the metadata. 
 
         Returns:
             List[Dict]: A dictionary containing the metadata.
@@ -368,20 +384,10 @@ class Web:
         }
         return self._get_wrapper_data('meta',ep_params)
 
-class Stats:
-    def __init__(self, ver: str = 'v1', lang: str = 'en', ssl_verify: bool = True):
-        """
-        Initializes the NHLApi object.
+class StatsConnector(Connector):
 
-        Args:
-            ver (str): The version of the API to use. Currently there is only 'v1'.
-            lang (str): The language to use for API responses. Delfaults to 'en'.
-            ssl_verify (bool): Whether to verify SSL certificates.
-        """
-        self._wrapper = Wrapper(ver, lang, ssl_verify)
-
-    def _get_wrapper_data(self, endpoint: str, type_: str = 'stats', ep_params: Dict = None):
-        return self._wrapper.get(type=type_, endpoint=endpoint, ep_params=ep_params or {})
+    def __init__(self, ver: str = 'v1', lang: str = 'en', ssl_verify: bool = True)
+        super().__init__('stats', ver, lang, ssl_verify)
     
     def teams(self) -> List[Dict]:
         """
@@ -404,8 +410,7 @@ class Stats:
         """
         ep_params = {
             'limit': '-1',
-            'cayenneExp': None,
-            'seasonId': season
+            'cayenneExp': f'seasonId={season}'
             }
         data = self._get_wrapper_data('goalie/summary', ep_params=ep_params)
         goalies = data['data']
@@ -419,14 +424,14 @@ class Stats:
         Args:
             season (int): The season ID for which to retrieve player statistics.
             pos (str): The position of the players to retrieve statistics for.
-            total_players (int, optional): The total number of players to retrieve. Defaults to 1000.
-            isAggregate (bool, optional): Whether to retrieve aggregate statistics. Defaults to None.
-            isGame (bool, optional): Whether to retrieve game statistics. Defaults to None.
-            factCayenneExp (str, optional): The Cayenne expression for additional filtering. Defaults to None.
-            include (str, optional): The fields to include in the response. Defaults to None.
-            exclude (str, optional): The fields to exclude from the response. Defaults to None.
-            sort (str, optional): The field to sort the response by. Defaults to None.
-            dir_ (str, optional): The direction to sort the response in. Defaults to None.
+            total_players (int, optional): The total number of players to retrieve.
+            isAggregate (bool, optional): Whether to retrieve aggregate statistics. 
+            isGame (bool, optional): Whether to retrieve game statistics. 
+            factCayenneExp (str, optional): The Cayenne expression for additional filtering. 
+            include (str, optional): The fields to include in the response. 
+            exclude (str, optional): The fields to exclude from the response. 
+            sort (str, optional): The field to sort the response by. 
+            dir_ (str, optional): The direction to sort the response in. 
 
         Returns:
             List[Dict]: A list of dictionaries containing player statistics.
@@ -502,15 +507,15 @@ class Stats:
 
         Args:
             season (int): The season ID for which to retrieve team statistics.
-            total_teams (int, optional): The total number of teams to retrieve. Defaults to -1, which retrieves all teams.
-            isAggregate (bool, optional): Whether to retrieve aggregate statistics. Defaults to None.
-            isGame (bool, optional): Whether to retrieve game statistics. Defaults to None.
-            factCayenneExp (str, optional): The Cayenne expression for additional filtering. Defaults to None.
-            include (str, optional): The fields to include in the response. Defaults to None.
-            exclude (str, optional): The fields to exclude from the response. Defaults to None.
-            sort (str, optional): The field to sort the response by. Defaults to None.
-            dir_ (str, optional): The direction to sort the response in. Defaults to None.
-            start (int, optional): The starting index for retrieving teams. Defaults to None.
+            total_teams (int, optional): The total number of teams to retrieve. 
+            isAggregate (bool, optional): Whether to retrieve aggregate statistics. 
+            isGame (bool, optional): Whether to retrieve game statistics. 
+            factCayenneExp (str, optional): The Cayenne expression for additional filtering. 
+            include (str, optional): The fields to include in the response. 
+            exclude (str, optional): The fields to exclude from the response. 
+            sort (str, optional): The field to sort the response by. 
+            dir_ (str, optional): The direction to sort the response in. 
+            start (int, optional): The starting index for retrieving teams. 
 
         Returns:
             List[Dict]: A list of dictionaries containing team statistics.
@@ -561,7 +566,7 @@ class Stats:
         Retrieves information about NHL games.
 
         Args:
-            meta (bool, optional): Whether to retrieve metadata about the games. Defaults to False.
+            meta (bool, optional): Whether to retrieve metadata about the games.
 
         Returns:
             List[Dict]: A list of dictionaries containing game information.
