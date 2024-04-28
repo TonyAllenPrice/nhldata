@@ -1,16 +1,14 @@
 from setuptools import setup
 
 setup(
-    name='nhlstats',
+    name='nhldata',
     version='0.0.1',
     install_requires=[
-        'requests',
-        'csv',
-        'zipfile'
+        'requests'
     ],
     author='Tony Price',
     license='MIT',
     packages=[
-        'nhlstats','nhlstats.moneypuck','nhlstats.nhl'
+        'nhldata','nhldata.moneypuck','nhldata.nhl'
     ]
 )

@@ -1,7 +1,7 @@
-import nhlstats
+import nhldata
 
-mp = nhlstats.moneypuck.Connector()
-nhl_web = nhlstats.nhl.WebConnector()
-nhl_stats = nhlstats.nhl.StatsConnector()
+mp = nhldata.moneypuck.Connector()
+nhl_web = nhldata.nhl.WebConnector()
+nhl_stats = nhldata.nhl.StatsConnector()
 
 print(nhl_web.seasons())
