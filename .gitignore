@@ -16,3 +16,6 @@ nhlstats/moneypuck/__pycache__/
 nhlstats/tools/__pycache__/
 nhlstats/__pycache__/
 project.toml
+dist/nhlstats-0.0.1-py3-none-any.whl
+dist/nhlstats-0.0.1.tar.gz
+dist/
