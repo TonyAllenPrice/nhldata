@@ -1,5 +1,5 @@
-from wrapper import Wrapper
-from exceptions import NHLApiException
+from .wrapper import Wrapper
+from ..tools.exceptions import NHLStatsException
 from typing import List, Dict
 
 class Connector(object):
@@ -38,12 +38,12 @@ class Connector(object):
 
     def _check_gametype(self,gametype:str):
         gametypes = {'regular': 2, 'playoffs': 3}
-        return gametypes.get(gametype, NHLApiException)
+        return gametypes.get(gametype, NHLStatsException)
         
 
 class WebConnector(Connector):
 
-    def __init__(self, ver: str = 'v1', lang: str = 'en', ssl_verify: bool = True)
+    def __init__(self, ver: str = 'v1', lang: str = 'en', ssl_verify: bool = True):
         super().__init__('web', ver, lang, ssl_verify)
 
     def _extract_default(self, data):
@@ -263,7 +263,7 @@ class WebConnector(Connector):
             List[Dict]: A dictionary containing the schedule.
         """
         window_str = 'now' if window is None else window
-        length = 'season' if length = None else length
+        length = 'season' if length is None else length
         ep = f'club-schedule-season/{team}/{window_str}' if length == 'season' else f'club-schedule/{team}/{length}/{window_str}'
         return self._get_wrapper_data(ep)
 
@@ -386,7 +386,7 @@ class WebConnector(Connector):
 
 class StatsConnector(Connector):
 
-    def __init__(self, ver: str = 'v1', lang: str = 'en', ssl_verify: bool = True)
+    def __init__(self, ver: str = 'v1', lang: str = 'en', ssl_verify: bool = True):
         super().__init__('stats', ver, lang, ssl_verify)
     
     def teams(self) -> List[Dict]:

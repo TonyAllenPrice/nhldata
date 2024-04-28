@@ -1,6 +1,5 @@
 import requests
 from typing import List, Dict
-from exceptions import NHLApiException
 
 class Wrapper:
     def __init__(self, ver:str = 'v1', lang:str = 'en', ssl_verify: bool = True):

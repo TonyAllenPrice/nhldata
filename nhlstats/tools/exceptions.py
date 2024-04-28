@@ -1,0 +1,2 @@
+class NHLStatsException(Exception):
+    pass

@@ -1,16 +1,9 @@
-'''
-Script requests and dowloads the data files that are published by MoneyPuck here:
-https://moneypuck.com/data.htm
-
-Data Dictionary available here: 
-https://peter-tanner.com/moneypuck/downloads/MoneyPuckDataDictionaryForPlayers.csv
-'''
-
 import csv
 import requests
 import io
 import zipfile
 import datetime
+from ..tools.exceptions import NHLStatsException
 
 class Connector:
     def __init__(self):
@@ -37,15 +30,15 @@ class Connector:
         valid_range = range(2006, self.max_year) if single_year else range(2007, self.max_year)
         
         if gametype and gametype not in valid_gametypes:
-            raise ValueError(f"Invalid gametype. Valid options are: {valid_gametypes}.")
+            raise NHLStatsException(f"Invalid gametype. Valid options are: {valid_gametypes}.")
         if season and (single_year and season not in valid_range or not single_year and set(season).difference(valid_range)):
-            raise ValueError(f"Invalid season. Valid seasons are {valid_range}.")
+            raise NHLStatsException(f"Invalid season. Valid seasons are {valid_range}.")
         if position and position not in valid_positions:
-            raise ValueError(f"Invalid position. Valid options are: {valid_positions}.")
+            raise NHLStatsException(f"Invalid position. Valid options are: {valid_positions}.")
         if file_type and file_type not in valid_file_types:
-            raise ValueError(f"Invalid file type. Valid options are: {valid_file_types}.")
+            raise NHLStatsException(f"Invalid file type. Valid options are: {valid_file_types}.")
 
-    def self._fetch_and_process_data(self,endpoint:str, file_name:str):
+    def _fetch_and_process_data(self,endpoint:str, file_name:str):
         '''
         Fetches and processes data from a specified endpoint.
 
