@@ -98,7 +98,7 @@ jobs:
     runs-on: ubuntu-latest
 
     environment:
-      name: test-pypi
+      name: testpypi
       url: https://test.pypi.org/p/nhldata
 
     permissions:
